@@ -1,39 +1,39 @@
 (function () {
   "use strict";
   try {
+    var root = document.body || document.documentElement;
     var badge = document.createElement("div");
     badge.textContent = "MATTEOHS — FILTRO JS CARICATO";
     badge.setAttribute("aria-hidden", "true");
     badge.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;";
-    (document.body || document.documentElement).appendChild(badge);
+    var reason = document.createElement("div");
+    reason.textContent = "MHS in attesa di un messaggio !";
+    reason.setAttribute("aria-hidden", "true");
+    reason.style.cssText = "position:fixed;top:34px;left:8px;z-index:2147483647;max-width:calc(100% - 16px);margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;white-space:pre-wrap;";
+    root.appendChild(badge);
+    root.appendChild(reason);
     setTimeout(function () {
       if (badge.parentNode) badge.parentNode.removeChild(badge);
+      if (reason.parentNode) reason.parentNode.removeChild(reason);
     }, 30000);
 
+    function note(text) {
+      reason.textContent = text;
+    }
+    function clip(value) {
+      value = String(value || "");
+      return value.length > 80 ? value.slice(0, 80) + "…" : value;
+    }
+
     var COMMANDS = {
-      "!1000": 1,
-      "!alexa": 1,
-      "!bono": 1,
-      "!citare": 1,
-      "!denti": 1,
-      "!diavolo": 1,
-      "!indirettamente": 1,
-      "!indirettamente2": 1,
-      "!intrattenimento": 1,
-      "!olio": 1,
-      "!preciso": 1,
-      "!pupazzo": 1,
-      "!rentronata": 1,
-      "!schermo": 1,
-      "!vicina": 1,
-      "!zippa": 1,
-      "!ariete": 1,
-      "!padre": 1,
-      "!comandi": 1
+      "!1000": 1, "!alexa": 1, "!bono": 1, "!citare": 1, "!denti": 1,
+      "!diavolo": 1, "!indirettamente": 1, "!indirettamente2": 1,
+      "!intrattenimento": 1, "!olio": 1, "!preciso": 1, "!pupazzo": 1,
+      "!rentronata": 1, "!schermo": 1, "!vicina": 1, "!zippa": 1,
+      "!ariete": 1, "!padre": 1, "!comandi": 1
     };
 
     var params = new URLSearchParams(window.location.search);
-
     function flag(name, fallback) {
       if (!params.has(name)) return fallback;
       var value = String(params.get(name) || "").trim().toLowerCase();
@@ -41,7 +41,6 @@
       if (value === "1" || value === "on" || value === "true") return true;
       return fallback;
     }
-
     function numberParam(name, fallback, min, max) {
       if (!params.has(name)) return fallback;
       var value = parseFloat(params.get(name));
@@ -50,7 +49,6 @@
       if (value > max) return max;
       return value;
     }
-
     var voiceOn = flag("mhscmd", true);
     var emoteOn = flag("mhsemote", true);
     var minEmotes = numberParam("mhsmin", 5, 1, 100);
@@ -59,7 +57,6 @@
     var almost = numberParam("mhsalmost", 85, 1, 100) / 100;
     var burstCount = numberParam("mhsburst", 3, 2, 20);
     var burstMs = numberParam("mhsburstsec", 10, 1, 120) * 1000;
-
     if (!voiceOn && !emoteOn) return;
 
     var recent = new Map();
@@ -73,7 +70,6 @@
       var value = el.getAttribute && el.getAttribute("class");
       return value ? String(value) : "";
     }
-
     function isEmoteElement(el) {
       if (!el || el.nodeType !== 1) return false;
       var tag = el.tagName;
@@ -87,7 +83,6 @@
       }
       return false;
     }
-
     function emoteKey(el, anon) {
       var name = el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("aria-label") || "";
       name = String(name).replace(/\s+/g, " ").trim().toLowerCase();
@@ -97,7 +92,6 @@
       if (src) return "s:" + src;
       return "anon:" + anon.count++;
     }
-
     function addEmojiText(text, emotes, words) {
       var source = String(text || "");
       var last = 0;
@@ -111,7 +105,6 @@
       }
       words.push(source.slice(last));
     }
-
     function usefulWords(chunks) {
       var text = chunks.join(" ").replace(/\s+/g, " ").trim();
       if (!text) return 0;
@@ -122,7 +115,6 @@
       }
       return count;
     }
-
     function analyze(data) {
       var emotes = [];
       var chunks = [];
@@ -168,7 +160,6 @@
       }
       return { count: emotes.length, share: share, highest: highest };
     }
-
     function messageText(data) {
       var raw = String(data.chatmessage || "").replace(/\u00a0/g, " ");
       if (!data.textonly) {
@@ -178,7 +169,13 @@
       }
       return raw.replace(/\s+/g, " ").trim();
     }
-
+    function commandKey(value) {
+      return String(value || "").replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+    function visibleCommand(node) {
+      var box = node.querySelector && (node.querySelector(".hl-content") || node.querySelector(".hl-message"));
+      return commandKey(box ? box.innerText : "");
+    }
     function isProtected(data) {
       if (!data) return true;
       var type = String(data.type || "").toLowerCase();
@@ -189,7 +186,6 @@
       if (data.contentimg) return true;
       return false;
     }
-
     function userKey(data) {
       var name = String(data.chatname || "");
       if (name.indexOf("<") !== -1) {
@@ -201,7 +197,6 @@
       if (!name) return "";
       return String(data.type || "").toLowerCase() + "|" + name;
     }
-
     function remember(data) {
       var key = userKey(data);
       if (!key) return 0;
@@ -221,22 +216,39 @@
       recent.set(key, kept);
       return kept.length;
     }
-
     function hideNode(node) {
       if (node && node.parentNode) node.parentNode.removeChild(node);
     }
-
-    function judge(node) {
+    function judge(node, retry) {
       if (!node || node.nodeType !== 1 || node.dataset.mhsDock) return;
       var data = node.rawContents;
-      if (!data) return;
+      if (!data) {
+        if (!retry && !node.dataset.mhsWait) {
+          node.dataset.mhsWait = "1";
+          requestAnimationFrame(function () { judge(node, true); });
+        } else if (retry && node.matches && node.matches(".highlight-chat")) {
+          note("MHS senza rawContents | visibile=\"" + clip(visibleCommand(node)) + "\"");
+        }
+        return;
+      }
       node.dataset.mhsDock = "1";
       try {
-        if (isProtected(data)) return;
-        if (voiceOn && COMMANDS[messageText(data).toLowerCase()]) {
+        var stored = commandKey(messageText(data));
+        var visible = visibleCommand(node);
+        var looked = stored.charAt(0) === "!" || visible.charAt(0) === "!";
+        var key = COMMANDS[stored] ? stored : (COMMANDS[visible] ? visible : "");
+        if (isProtected(data)) {
+          if (looked) {
+            note("MHS tenuto | type=" + String(data.type || "") + " | event=" + String(data.event || "") + " | member=" + String(data.membership || "") + " | dono=" + String(data.hasDonation || data.donation || "") + " | img=" + (data.contentimg ? "si" : "no") + " | salvato=\"" + clip(stored) + "\" | visibile=\"" + clip(visible) + "\"");
+          }
+          return;
+        }
+        if (voiceOn && key) {
+          note("MHS nascosto | testo=\"" + clip(key) + "\"");
           hideNode(node);
           return;
         }
+        if (looked) note("MHS non in lista | salvato=\"" + clip(stored) + "\" | visibile=\"" + clip(visible) + "\"");
         if (!emoteOn) return;
         var info = analyze(data);
         var almostOnly = info.count > 0 && info.share >= almost;
@@ -246,12 +258,13 @@
           return;
         }
         if (almostOnly && remember(data) >= burstCount) hideNode(node);
-      } catch (e) {}
+      } catch (e) {
+        note("MHS errore | " + clip(e && e.message ? e.message : "eccezione"));
+      }
     }
-
     function visit(node) {
       if (!node || node.nodeType !== 1) return;
-      if (node.rawContents) {
+      if (node.rawContents || (node.matches && node.matches(".highlight-chat"))) {
         judge(node);
         return;
       }
@@ -259,14 +272,12 @@
       var rows = node.querySelectorAll(".highlight-chat");
       for (var i = 0; i < rows.length; i++) judge(rows[i]);
     }
-
     var observer = new MutationObserver(function (records) {
       for (var i = 0; i < records.length; i++) {
         var added = records[i].addedNodes;
         for (var j = 0; j < added.length; j++) visit(added[j]);
       }
     });
-
     function arm() {
       var output = document.getElementById("output");
       if (!output) {
@@ -277,7 +288,6 @@
       var rows = output.querySelectorAll(".highlight-chat");
       for (var i = 0; i < rows.length; i++) judge(rows[i]);
     }
-
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", arm, { once: true });
     } else {
