@@ -3,7 +3,7 @@
   try {
     var root = document.body || document.documentElement;
     var badge = document.createElement("div");
-    badge.textContent = "MATTEOHS — FILTRO JS CARICATO";
+    badge.textContent = "MATTEOHS — FILTRO JS BUILD EMOTE1";
     badge.setAttribute("aria-hidden", "true");
     badge.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;";
     var reason = document.createElement("div");
@@ -149,6 +149,9 @@
         };
         walk(holder);
       }
+      if (data.contentimg && EMOTE_SRC.test(String(data.contentimg))) {
+        emotes.push("s:" + String(data.contentimg).split("?")[0].split("#")[0]);
+      }
       var words = usefulWords(chunks);
       var total = emotes.length + words;
       var share = total ? emotes.length / total : 0;
@@ -182,7 +185,7 @@
       if (type !== "twitch" && type !== "kick") return true;
       if (data.event) return true;
       if (data.hasDonation || data.donation) return true;
-      if (data.contentimg) return true;
+      if (data.contentimg && !EMOTE_SRC.test(String(data.contentimg))) return true;
       return false;
     }
     function userKey(data) {
