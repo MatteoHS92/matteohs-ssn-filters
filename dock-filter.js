@@ -1,6 +1,15 @@
 (function () {
   "use strict";
   try {
+    var badge = document.createElement("div");
+    badge.textContent = "MATTEOHS — FILTRO JS CARICATO";
+    badge.setAttribute("aria-hidden", "true");
+    badge.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;";
+    (document.body || document.documentElement).appendChild(badge);
+    setTimeout(function () {
+      if (badge.parentNode) badge.parentNode.removeChild(badge);
+    }, 30000);
+
     var COMMANDS = {
       "!1000": 1,
       "!alexa": 1,
