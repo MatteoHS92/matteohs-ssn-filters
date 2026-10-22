@@ -3,7 +3,7 @@
   try {
     var root = document.body || document.documentElement;
     var badge = document.createElement("div");
-    badge.textContent = "MATTEOHS — FILTRO JS BUILD EMOTE1";
+    badge.textContent = "MATTEOHS — FILTRO JS BUILD EMOTE2";
     badge.setAttribute("aria-hidden", "true");
     badge.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;";
     var reason = document.createElement("div");
@@ -41,27 +41,10 @@
       if (value === "1" || value === "on" || value === "true") return true;
       return fallback;
     }
-    function numberParam(name, fallback, min, max) {
-      if (!params.has(name)) return fallback;
-      var value = parseFloat(params.get(name));
-      if (!isFinite(value)) return fallback;
-      if (value < min) return min;
-      if (value > max) return max;
-      return value;
-    }
     var voiceOn = flag("mhscmd", true);
     var emoteOn = flag("mhsemote", true);
-    var minEmotes = numberParam("mhsmin", 5, 1, 100);
-    var ratio = numberParam("mhsratio", 70, 1, 100) / 100;
-    var repeatMin = numberParam("mhsrepeat", 3, 2, 100);
-    var almost = numberParam("mhsalmost", 85, 1, 100) / 100;
-    var burstCount = numberParam("mhsburst", 3, 2, 20);
-    var burstMs = numberParam("mhsburstsec", 10, 1, 120) * 1000;
     if (!voiceOn && !emoteOn) return;
 
-    var recent = new Map();
-    var MAX_USERS = 200;
-    var MAX_STAMPS = 8;
     var EMOTE_CLASS = /(?:^|\s)(?:regular-emote|zero-width-emote(?:-centered)?|seventv-chat-emote|chat-line__message--emote(?:-gigantified)?|chat-image)(?:\s|$)/i;
     var EMOTE_SRC = /\/emotes\/|\/emoticons\/|betterttv|7tv\.app|7tv\.io|frankerfacez|ffzcdn|jtvnw\.net\/emoticons/i;
     var EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}]{2}|[0-9#*]\uFE0F?\u20E3|\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?)*/gu;
@@ -83,15 +66,6 @@
       }
       return false;
     }
-    function emoteKey(el, anon) {
-      var name = el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("aria-label") || "";
-      name = String(name).replace(/\s+/g, " ").trim().toLowerCase();
-      if (name) return "n:" + name;
-      var src = el.getAttribute("src") || "";
-      src = String(src).split("?")[0].split("#")[0];
-      if (src) return "s:" + src;
-      return "anon:" + anon.count++;
-    }
     function addEmojiText(text, emotes, words) {
       var source = String(text || "");
       var last = 0;
@@ -99,7 +73,7 @@
       EMOJI_RE.lastIndex = 0;
       while ((match = EMOJI_RE.exec(source))) {
         words.push(source.slice(last, match.index));
-        emotes.push("e:" + match[0]);
+        emotes.push("e");
         last = match.index + match[0].length;
         if (match.index === EMOJI_RE.lastIndex) EMOJI_RE.lastIndex++;
       }
@@ -118,7 +92,6 @@
     function analyze(data) {
       var emotes = [];
       var chunks = [];
-      var anon = { count: 1 };
       var raw = String(data.chatmessage || "");
       if (data.textonly) {
         addEmojiText(raw, emotes, chunks);
@@ -133,12 +106,11 @@
           }
           if (node.nodeType !== 1) return;
           if (isEmoteElement(node)) {
-            emotes.push(emoteKey(node, anon));
+            emotes.push("e");
             return;
           }
           if (classText(node).split(/\s+/).indexOf("emoji") !== -1) {
-            var emojiText = (node.textContent || "").trim();
-            if (emojiText) emotes.push("e:" + emojiText);
+            if ((node.textContent || "").trim()) emotes.push("e");
             return;
           }
           var child = node.firstChild;
@@ -149,19 +121,8 @@
         };
         walk(holder);
       }
-      if (data.contentimg && EMOTE_SRC.test(String(data.contentimg))) {
-        emotes.push("s:" + String(data.contentimg).split("?")[0].split("#")[0]);
-      }
-      var words = usefulWords(chunks);
-      var total = emotes.length + words;
-      var share = total ? emotes.length / total : 0;
-      var counts = {};
-      var highest = 0;
-      for (var i = 0; i < emotes.length; i++) {
-        counts[emotes[i]] = (counts[emotes[i]] || 0) + 1;
-        if (counts[emotes[i]] > highest) highest = counts[emotes[i]];
-      }
-      return { count: emotes.length, share: share, highest: highest };
+      if (data.contentimg && EMOTE_SRC.test(String(data.contentimg))) emotes.push("e");
+      return { count: emotes.length, words: usefulWords(chunks) };
     }
     function messageText(data) {
       var raw = String(data.chatmessage || "").replace(/\u00a0/g, " ");
@@ -187,36 +148,6 @@
       if (data.hasDonation || data.donation) return true;
       if (data.contentimg && !EMOTE_SRC.test(String(data.contentimg))) return true;
       return false;
-    }
-    function userKey(data) {
-      var name = String(data.chatname || "");
-      if (name.indexOf("<") !== -1) {
-        var holder = document.createElement("div");
-        holder.innerHTML = name;
-        name = holder.textContent || "";
-      }
-      name = name.replace(/\s+/g, " ").trim().toLowerCase();
-      if (!name) return "";
-      return String(data.type || "").toLowerCase() + "|" + name;
-    }
-    function remember(data) {
-      var key = userKey(data);
-      if (!key) return 0;
-      var now = Date.now();
-      var stamps = recent.get(key) || [];
-      var kept = [];
-      for (var i = 0; i < stamps.length; i++) {
-        if (now - stamps[i] <= burstMs) kept.push(stamps[i]);
-      }
-      kept.push(now);
-      if (kept.length > MAX_STAMPS) kept = kept.slice(kept.length - MAX_STAMPS);
-      if (!recent.has(key) && recent.size >= MAX_USERS) {
-        var oldest = recent.keys().next().value;
-        recent.delete(oldest);
-      }
-      recent.delete(key);
-      recent.set(key, kept);
-      return kept.length;
     }
     function hideNode(node) {
       if (node && node.parentNode) node.parentNode.removeChild(node);
@@ -253,13 +184,10 @@
         if (looked) note("MHS non in lista | salvato=\"" + clip(stored) + "\" | visibile=\"" + clip(visible) + "\"");
         if (!emoteOn) return;
         var info = analyze(data);
-        var almostOnly = info.count > 0 && info.share >= almost;
-        if ((info.count >= minEmotes && info.share >= ratio) || (info.highest >= repeatMin && almostOnly)) {
-          if (almostOnly) remember(data);
+        if (info.count > 0 && info.words === 0) {
+          note("MHS emote nascosta");
           hideNode(node);
-          return;
         }
-        if (almostOnly && remember(data) >= burstCount) hideNode(node);
       } catch (e) {
         note("MHS errore | " + clip(e && e.message ? e.message : "eccezione"));
       }
