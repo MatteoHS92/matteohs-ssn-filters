@@ -182,7 +182,6 @@
       if (type !== "twitch" && type !== "kick") return true;
       if (data.event) return true;
       if (data.hasDonation || data.donation) return true;
-      if (data.membership) return true;
       if (data.contentimg) return true;
       return false;
     }
