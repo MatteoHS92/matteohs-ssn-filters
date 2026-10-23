@@ -3,7 +3,7 @@
   try {
     var root = document.body || document.documentElement;
     var badge = document.createElement("div");
-    badge.textContent = "MATTEOHS — FILTRO JS BUILD EMOTE2";
+    badge.textContent = "MATTEOHS — FILTRO JS BUILD SHARE1";
     badge.setAttribute("aria-hidden", "true");
     badge.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;";
     var reason = document.createElement("div");
@@ -17,9 +17,7 @@
       if (reason.parentNode) reason.parentNode.removeChild(reason);
     }, 30000);
 
-    function note(text) {
-      reason.textContent = text;
-    }
+    function note(text) { reason.textContent = text; }
     function clip(value) {
       value = String(value || "");
       return value.length > 80 ? value.slice(0, 80) + "…" : value;
@@ -32,6 +30,12 @@
       "!rentronata": 1, "!schermo": 1, "!vicina": 1, "!zippa": 1,
       "!ariete": 1, "!padre": 1, "!comandi": 1
     };
+    var SHARE_BODIES = {
+      "shared the live stream": 1,
+      "shared the live": 1,
+      "shared the live video": 1
+    };
+    var KEPT_EVENTS = { gift: 1, followed: 1, joined: 1, liked: 1, reward: 1 };
 
     var params = new URLSearchParams(window.location.search);
     function flag(name, fallback) {
@@ -140,6 +144,31 @@
       var box = node.querySelector && (node.querySelector(".hl-content") || node.querySelector(".hl-message"));
       return commandKey(box ? box.innerText : "");
     }
+    function noticeText(value) {
+      var raw = String(value || "").replace(/\u00a0/g, " ");
+      if (raw.indexOf("<") !== -1) {
+        var holder = document.createElement("div");
+        holder.innerHTML = raw;
+        raw = holder.textContent || "";
+      }
+      return raw.replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/[!.?…]+/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+    function eventName(data) {
+      if (data.event === true) return "true";
+      return String(data.event || "").trim().toLowerCase();
+    }
+    function isTikTokShareNotice(data, node) {
+      if (String(data.type || "").toLowerCase() !== "tiktok") return false;
+      if (data.hasDonation || data.donation) return false;
+      var name = eventName(data);
+      if (KEPT_EVENTS[name]) return false;
+      if (name === "share") return true;
+      var text = noticeText(messageText(data));
+      if (!text && node) text = noticeText(visibleCommand(node));
+      var who = noticeText(data.chatname);
+      if (who && text.indexOf(who + " ") === 0) text = text.slice(who.length).trim();
+      return !!SHARE_BODIES[text];
+    }
     function isProtected(data) {
       if (!data) return true;
       var type = String(data.type || "").toLowerCase();
@@ -166,6 +195,16 @@
       }
       node.dataset.mhsDock = "1";
       try {
+        if (isTikTokShareNotice(data, node)) {
+          note("MHS share nascosta | event=" + eventName(data));
+          hideNode(node);
+          return;
+        }
+        var type = String(data.type || "").toLowerCase();
+        var body = noticeText(messageText(data));
+        if (type === "tiktok" && body.indexOf("shared the live") !== -1) {
+          note("MHS share dubbio | event=" + eventName(data) + " | dono=" + String(data.hasDonation || data.donation || "") + " | testo=\"" + clip(body) + "\"");
+        }
         var stored = commandKey(messageText(data));
         var visible = visibleCommand(node);
         var looked = stored.charAt(0) === "!" || visible.charAt(0) === "!";
