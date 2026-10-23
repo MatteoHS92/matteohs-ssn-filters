@@ -3,7 +3,7 @@
   try {
     var root = document.body || document.documentElement;
     var badge = document.createElement("div");
-    badge.textContent = "MATTEOHS — FILTRO JS BUILD SHARE1";
+    badge.textContent = "MATTEOHS — FILTRO JS BUILD GIFT1";
     badge.setAttribute("aria-hidden", "true");
     badge.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;";
     var reason = document.createElement("div");
@@ -169,6 +169,13 @@
       if (who && text.indexOf(who + " ") === 0) text = text.slice(who.length).trim();
       return !!SHARE_BODIES[text];
     }
+    // Nasconde esclusivamente le notifiche di regalo/donazione TikTok nel Dock.
+    // Gli eventi restano disponibili nel relay SSN per altre applicazioni.
+    function isTikTokGiftNotice(data) {
+      if (!data || String(data.type || "").trim().toLowerCase() !== "tiktok") return false;
+      if (eventName(data) === "gift") return true;
+      return !!(data.hasDonation || data.donation);
+    }
     function isProtected(data) {
       if (!data) return true;
       var type = String(data.type || "").toLowerCase();
@@ -195,6 +202,11 @@
       }
       node.dataset.mhsDock = "1";
       try {
+        if (isTikTokGiftNotice(data)) {
+          note("MHS regalo TikTok nascosto | event=" + eventName(data) + " | dono=" + clip(data.hasDonation || data.donation || ""));
+          hideNode(node);
+          return;
+        }
         if (isTikTokShareNotice(data, node)) {
           note("MHS share nascosta | event=" + eventName(data));
           hideNode(node);
