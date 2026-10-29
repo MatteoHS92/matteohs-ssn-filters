@@ -3,7 +3,7 @@
   try {
     var root = document.body || document.documentElement;
     var badge = document.createElement("div");
-    badge.textContent = "MATTEOHS — FILTRO JS BUILD GIFT1";
+    badge.textContent = "MATTEOHS — FILTRO JS BUILD FREGNA1";
     badge.setAttribute("aria-hidden", "true");
     badge.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.72);color:#EFEFF1;font:12px/16px Inter,sans-serif;pointer-events:none;user-select:none;";
     var reason = document.createElement("div");
@@ -28,7 +28,7 @@
       "!diavolo": 1, "!indirettamente": 1, "!indirettamente2": 1,
       "!intrattenimento": 1, "!olio": 1, "!preciso": 1, "!pupazzo": 1,
       "!rentronata": 1, "!schermo": 1, "!vicina": 1, "!zippa": 1,
-      "!ariete": 1, "!padre": 1, "!comandi": 1
+      "!ariete": 1, "!padre": 1, "!comandi": 1, "!fregna": 1
     };
     var SHARE_BODIES = {
       "shared the live stream": 1,
